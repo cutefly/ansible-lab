@@ -1,0 +1,20 @@
+---
+- hosts: all
+  tasks:
+  - name: copying file with playbook
+    copy:
+      src: ~/collect.sh
+      dest: /tmp/
+      owner: root
+      group: root
+      mode: 0744
+  - name: execute shell script
+    #    shell: ./collect.sh > result/result_$(hostname)_$(date +"%Y-%m-%d").txt
+    shell: sh collect.sh > result/result_{{ inventory_hostname }}.txt
+    args:
+      chdir: /tmp
+  - name: copying result file with shel execute
+    fetch:
+      src: /tmp/result/result_{{ inventory_hostname }}.txt
+      dest: /root/result/
+      flat: yes
