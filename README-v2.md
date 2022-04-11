@@ -4,41 +4,61 @@
 
 ## 환경 구성
 
+### Worker node 설치
+
 ```sh
-1. ansible-worker
+1. ansible-worker for ubuntu
 $ docker run -d -it --name ansible_worker1 ubuntu
 $ docker run -d -it --name ansible_worker2 ubuntu
 
+# ansible_worker1에 shell 접속
 $ docker exec -it ansible_worker1 bash
-# apt update
-# apt install openssh-server
+
+# 필요한 환경 구성
+root # apt update
+root # apt install openssh-server
 locale : Asis/Seoul
 
-# apt install vim
-# vi /etc/ssh/sshd_config
+root # apt install vim -y
+root # vi /etc/ssh/sshd_config
 Port 22
 
-# service ssh restart
+root # service ssh restart
 
-# useradd -m appadmin
-# passwd appadmin (choi)
+root # useradd -m appadmin
+root # passwd appadmin (choi)
 
-# apt install sudo
-# usermod -aG sudo appadmin
+root # apt install sudo
+root # usermod -aG sudo appadmin
 
-# visudo /etc/sudoers
+root # visudo /etc/sudoers
 appadmin ALL=NOPASSWD: ALL
 
 $ docker exec -it -u appadmin ansible_worker1 bash
 
+# 일반 계정으로 sudo 실행
+appadmin $ sudo apt update
+```
+
+### Server node 설치
+
+```sh
 2. ansible-server
 $ docker run -d -it --name ansible_server ubuntu
 
+# ansible_server에 shell 접속속
 $ docker exec -it ansible_server bash
-# apt update
-# apt install ansible
-# apt install vim
-# vi /etc/ansible/hosts
+
+# 필요한 환경 구성성
+root # apt update
+root # apt install ansible -y
+root # apt install vim -y
+
+root # ssh-keygen
+root # ssh-copy-id appadmin@172.17.0.2
+
+# inventory 구성
+root # vi /etc/ansible/hosts(또는 ~/ansible/hosts)
 [ubuntu]
 172.17.0.2
 172.17.0.3
@@ -46,10 +66,24 @@ $ docker exec -it ansible_server bash
 [ubuntu:vars]
 ansible_ssh_user=appadmin
 
-# ssh-keygen
-# ssh-copy-id appadmin@172.17.0.2
+# ping 테스트
+root # ansible -m ping -i ansible/hosts all
+172.17.0.2 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+172.17.0.3 | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3"
+    },
+    "changed": false,
+    "ping": "pong"
+}
 
-# vi playbook-nginx.yaml
+root # vi playbook-nginx.yaml
 
 ---
 - hosts: all
@@ -62,7 +96,6 @@ ansible_ssh_user=appadmin
       cache_valid_time: 3600
 ---
 
-# ansible -m ping all
 # ansible-playbook playbook-nginx.yaml
 PLAY [all] *****************************************************************************************
 
@@ -78,21 +111,6 @@ changed: [172.17.0.3]
 PLAY RECAP *****************************************************************************************
 172.17.0.2                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 172.17.0.3                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-
-# ansible-playbook playbook-nginx.yaml
-PLAY [all] *****************************************************************************************
-
-TASK [Gathering Facts] *****************************************************************************
-ok: [172.17.0.3]
-ok: [172.17.0.2]
-
-TASK [Install nginx latest version] ****************************************************************
-ok: [172.17.0.3]
-ok: [172.17.0.2]
-
-PLAY RECAP *****************************************************************************************
-172.17.0.2                 : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-172.17.0.3                 : ok=2    changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
 ## Execute shell script
@@ -132,26 +150,73 @@ PLAY RECAP *********************************************************************
       - collect.sh
       - result
 
-$ ansible-playbook playbook-shell.yaml
-
 # custom inventory file (ansible/hosts)
 $ ansible-playbook playbook-shell.yaml -i ansible/hosts
+
+# 또는 Global
+$ ansible-playbook playbook-shell.yaml
 ```
 
 ## centos 추가
 
-```
-1. ansible-worker
+```sh
+3. ansible-worker for centos
 $ docker run -d -it --name ansible_worker3 centos:7
 $ docker run -d -it --name ansible_worker4 centos:7
+=> Failed to get D-Bus connection: Operation not permitted 에러 발생
 
 [ Failed to get D-Bus connection: Operation not permitted 에러 발생 시 ]
+참고 URL : https://jenakim47.tistory.com/47
 $ docker run --privileged=true -d --name ansible_worker3 centos:7 /sbin/init
+$ docker run --privileged=true -d --name ansible_worker4 centos:7 /sbin/init
+=> m1 macbook air 에서는 해결 못함.
 
 $ docker exec -it ansible_worker3 bash
-# yum install openssh-server openssh-clients openssh-askpass
-# vi /etc/ssh/sshd_config
+root # # yum install openssh-server openssh-clients openssh-askpass -y
+root # # vi /etc/ssh/sshd_config
 Port 22
+PermitRootLogin no
 
-docker 환경에서 systemctl 실행 이슈가 있어 보류
+$ docker restart ansible_worker3
+
+root # useradd -m apiadmin
+root # passwd apiadmin (choi)
+
+root # yum install sudo -y
+root # usermod -aG wheel apiadmin
+
+root # sudo visudo
+apiadmin ALL=NOPASSWD: ALL
+
+$ docker exec -it -u apiadmin ansible_worker3 bash
+```
+
+```sh
+4. ansible_server에서 client 구성 설정 변경
+
+root # ssh-copy-id apiadmin@172.17.0.5
+[ 키 충돌이 발생하는 경우 : ssh-keygen -R 172.17.0.5 ]
+
+# inventory 구성
+root # vi /etc/ansible/hosts(또는 ~/ansible/hosts)
+[ubuntu]
+172.17.0.2
+172.17.0.3
+
+[centos]
+172.17.0.5
+172.17.0.6
+
+[ubuntu:vars]
+ansible_ssh_user=appadmin
+
+[centos:vars]
+ansible_ssh_user=apiadmin
+
+# ping 테스트
+root # ansible -m ping -i ansible/hosts all
+root # ansible -m ping -i ansible/hosts ubuntu
+root # ansible -m ping -i ansible/hosts centos
+
+root # ansible-playbook playbook-shell.yaml -i ansible/hosts
 ```
