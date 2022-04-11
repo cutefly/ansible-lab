@@ -119,42 +119,43 @@ PLAY RECAP *********************************************************************
 172.17.0.3                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-## Execute shell script
+## Execute shell script (playbook-shell-all.yaml 예시시)
 
 ```yaml
 ---
 - hosts: all
+  # define variables
+  vars:
+    working_directory: /tmp/working
+    shell_filename: collect.sh
+    result_filename: result.txt
   tasks:
-  - name: copying file with playbook
-    copy:
-      src: ~/collect.sh
-      dest: /tmp/
-      owner: appadmin
-      group: appadmin
-      mode: 0744
   - name: create directory
     file:
-      path: /tmp/result
+      path: "{{ working_directory }}"
       state: directory
       mode: 0755
+  - name: copying execute shell file to remote
+    copy:
+      src: "{{ shell_filename }}"
+      dest: "{{ working_directory }}"
+      mode: 0744
   - name: execute shell script
     become: true
-    #    shell: ./collect.sh > result/result_$(hostname)_$(date +"%Y-%m-%d").txt
-    shell: sh collect.sh > result/result_{{ inventory_hostname }}.txt
+    become_method: sudo
+    become_user: root
+    shell: sh {{ shell_filename }}
     args:
-      chdir: /tmp
-  - name: copying result file with shel execute
+      chdir: "{{ working_directory }}"
+  - name: fetch result file from remote
     fetch:
-      src: /tmp/result/result_{{ inventory_hostname }}.txt
-      dest: ~/result/
+      src: "{{ working_directory }}/{{ result_filename }}"
+      dest: result/result_{{ inventory_hostname }}.txt
       flat: yes
   - name: remove files and directories
     file:
-      path: /tmp/{{ item }}
+      path: "{{ working_directory }}"
       state: absent
-    with_items:
-      - collect.sh
-      - result
 
 # custom inventory file (ansible/hosts)
 $ ansible-playbook playbook-shell.yaml -i ansible/hosts
