@@ -1,5 +1,38 @@
+# ansible-playbook playbook-shell.yaml -i ansible/hosts
 ---
-- hosts: all
+- hosts: ubuntu
+  tasks:
+  - name: copying file with playbook
+    copy:
+      src: ~/collect.sh
+      dest: /tmp/
+      mode: 0744
+  - name: create directory
+    file:
+      path: /tmp/result
+      state: directory
+      mode: 0755
+  - name: execute shell script
+    become: true
+    become_method: sudo
+    become_user: root
+    #    shell: ./collect.sh > result/result_$(hostname)_$(date +"%Y-%m-%d").txt
+    shell: sh collect.sh > result/result_{{ inventory_hostname }}.txt
+    args:
+      chdir: /tmp
+  - name: copying result file with shel execute
+    fetch:
+      src: /tmp/result/result_{{ inventory_hostname }}.txt
+      dest: ~/result/
+      flat: yes
+  - name: remove files and directories
+    file:
+      path: /tmp/{{ item }}
+      state: absent
+    with_items:
+      - collect.sh
+      - result
+- hosts: centos
   tasks:
   - name: copying file with playbook
     copy:
