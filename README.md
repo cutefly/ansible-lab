@@ -10,13 +10,19 @@
 1. ansible-worker for ubuntu
 $ docker run -d -it --name ansible_worker1 ubuntu
 $ docker run -d -it --name ansible_worker2 ubuntu
+=> systemctl 이슈가 있으나 사용하지 않으면 관계 없음.
+
+[systemctl 이슈가 있어 해결 중.....]
+docker run --privileged=true -d -it --name ansible_ubuntu ubuntu /sbin/init
+docker run --privileged=true -d -v /sys/fs/cgroup:/sys/fs/cgroup:ro -it --name ansible_ubuntu ubuntu /usr/sbin/init
+=> 기본 이미지로는 해결이 안 됨(Custom image를 생성하여 생성하면 가능함)
 
 # ansible_worker1에 shell 접속
 $ docker exec -it ansible_worker1 bash
 
 # 필요한 환경 구성
 root # apt update
-root # apt install openssh-server
+root # apt install openssh-server -y
 locale : Asis/Seoul
 
 root # apt install vim -y
@@ -172,8 +178,8 @@ $ docker run --privileged=true -d --name ansible_worker4 centos:7 /sbin/init
 => m1 macbook air 에서는 해결 못함.
 
 $ docker exec -it ansible_worker3 bash
-root # # yum install openssh-server openssh-clients openssh-askpass -y
-root # # vi /etc/ssh/sshd_config
+root # yum install openssh-server openssh-clients openssh-askpass -y
+root # vi /etc/ssh/sshd_config
 Port 22
 PermitRootLogin no
 

@@ -1,66 +1,68 @@
 # ansible-playbook playbook-shell.yaml -i ansible/hosts
 ---
 - hosts: ubuntu
+  # define variables
+  vars:
+    working_directory: /tmp/working
+    shell_filename: collect.sh
+    result_filename: result.txt
   tasks:
-  - name: copying file with playbook
-    copy:
-      src: ~/collect.sh
-      dest: /tmp/
-      mode: 0744
   - name: create directory
     file:
-      path: /tmp/result
+      path: "{{ working_directory }}"
       state: directory
       mode: 0755
+  - name: copying execute shell file to remote
+    copy:
+      src: "{{ shell_filename }}"
+      dest: "{{ working_directory }}"
+      mode: 0744
   - name: execute shell script
     become: true
     become_method: sudo
     become_user: root
-    #    shell: ./collect.sh > result/result_$(hostname)_$(date +"%Y-%m-%d").txt
-    shell: sh collect.sh > result/result_{{ inventory_hostname }}.txt
+    shell: sh {{ shell_filename }}
     args:
-      chdir: /tmp
-  - name: copying result file with shel execute
+      chdir: "{{ working_directory }}"
+  - name: fetch result file from remote
     fetch:
-      src: /tmp/result/result_{{ inventory_hostname }}.txt
-      dest: ~/result/
+      src: "{{ working_directory }}/{{ result_filename }}"
+      dest: result/result_{{ inventory_hostname }}.txt
       flat: yes
   - name: remove files and directories
     file:
-      path: /tmp/{{ item }}
+      path: "{{ working_directory }}"
       state: absent
-    with_items:
-      - collect.sh
-      - result
 - hosts: centos
+  # define variables
+  vars:
+    working_directory: /tmp/working
+    shell_filename: collect.sh
+    result_filename: result.txt
   tasks:
-  - name: copying file with playbook
-    copy:
-      src: ~/collect.sh
-      dest: /tmp/
-      mode: 0744
   - name: create directory
     file:
-      path: /tmp/result
+      path: "{{ working_directory }}"
       state: directory
       mode: 0755
+  - name: copying execute shell file to remote
+    copy:
+      src: "{{ shell_filename }}"
+      dest: "{{ working_directory }}"
+      mode: 0744
   - name: execute shell script
     become: true
     become_method: sudo
     become_user: root
-    #    shell: ./collect.sh > result/result_$(hostname)_$(date +"%Y-%m-%d").txt
-    shell: sh collect.sh > result/result_{{ inventory_hostname }}.txt
+    shell: sh {{ shell_filename }}
     args:
-      chdir: /tmp
-  - name: copying result file with shel execute
+      chdir: "{{ working_directory }}"
+  - name: fetch result file from remote
     fetch:
-      src: /tmp/result/result_{{ inventory_hostname }}.txt
-      dest: ~/result/
+      src: "{{ working_directory }}/{{ result_filename }}"
+      dest: result/result_{{ inventory_hostname }}.txt
       flat: yes
   - name: remove files and directories
     file:
-      path: /tmp/{{ item }}
+      path: "{{ working_directory }}"
       state: absent
-    with_items:
-      - collect.sh
-      - result
