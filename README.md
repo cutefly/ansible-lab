@@ -4,6 +4,16 @@
 
 ## 환경 구성
 
+### 인프라 구성예시
+
+```
+ansible_server(172.17.0.4) : root@ubuntu
+- ansible_worker1(172.17.0.2) : appadmin@ubuntu 
+- ansible_worker2(172.17.0.3) : appadmin@ubuntu 
+- ansible_worker3(172.17.0.5) : apiadmin@centos7
+- ansible_worker4(172.17.0.6) : apiadmin@centos7
+```
+
 ### Worker node 설치
 
 ```sh
