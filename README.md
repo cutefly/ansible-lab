@@ -15,7 +15,7 @@ $ docker run -d -it --name ansible_worker2 ubuntu
 [systemctl 이슈가 있어 해결 중.....]
 docker run --privileged=true -d -it --name ansible_ubuntu ubuntu /sbin/init
 docker run --privileged=true -d -v /sys/fs/cgroup:/sys/fs/cgroup:ro -it --name ansible_ubuntu ubuntu /usr/sbin/init
-=> 기본 이미지로는 해결이 안 됨(Custom image를 생성하여 생성하면 가능함)
+=> 기본 이미지로는 해결이 안 됨(Custom image를 이용하여 생성하면 가능함)
 
 # ansible_worker1에 shell 접속
 $ docker exec -it ansible_worker1 bash
@@ -55,7 +55,7 @@ $ docker run -d -it --name ansible_server ubuntu
 # ansible_server에 shell 접속속
 $ docker exec -it ansible_server bash
 
-# 필요한 환경 구성성
+# 필요한 환경 구성
 root # apt update
 root # apt install ansible -y
 root # apt install vim -y
@@ -119,7 +119,7 @@ PLAY RECAP *********************************************************************
 172.17.0.3                 : ok=2    changed=1    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
 ```
 
-## Execute shell script (playbook-shell-all.yaml 예시시)
+## Execute shell script (playbook-shell-all.yaml 예시)
 
 ```yaml
 ---
@@ -168,11 +168,13 @@ $ ansible-playbook playbook-shell.yaml
 
 ```sh
 3. ansible-worker for centos
+
+[ 기본 생성 방식으로는 ssh 서버 사용이 불가]
 $ docker run -d -it --name ansible_worker3 centos:7
 $ docker run -d -it --name ansible_worker4 centos:7
 => Failed to get D-Bus connection: Operation not permitted 에러 발생
 
-[ Failed to get D-Bus connection: Operation not permitted 에러 발생 시 ]
+[ Failed to get D-Bus connection: Operation not permitted 에러 발생 시 해결 방법]
 참고 URL : https://jenakim47.tistory.com/47
 $ docker run --privileged=true -d --name ansible_worker3 centos:7 /sbin/init
 $ docker run --privileged=true -d --name ansible_worker4 centos:7 /sbin/init

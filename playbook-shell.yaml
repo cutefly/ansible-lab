@@ -66,3 +66,69 @@
     file:
       path: "{{ working_directory }}"
       state: absent
+- hosts: centos
+  # define variables
+  vars:
+    working_directory: /tmp/working
+    shell_filename: collect.sh
+    result_filename: result.txt
+  tasks:
+  - name: create directory
+    file:
+      path: "{{ working_directory }}"
+      state: directory
+      mode: 0755
+  - name: copying execute shell file to remote
+    copy:
+      src: "{{ shell_filename }}"
+      dest: "{{ working_directory }}"
+      mode: 0744
+  - name: execute shell script
+    become: true
+    become_method: sudo
+    become_user: root
+    shell: sh {{ shell_filename }}
+    args:
+      chdir: "{{ working_directory }}"
+  - name: fetch result file from remote
+    fetch:
+      src: "{{ working_directory }}/{{ result_filename }}"
+      dest: result/result_{{ inventory_hostname }}.txt
+      flat: yes
+  - name: remove files and directories
+    file:
+      path: "{{ working_directory }}"
+      state: absent
+- hosts: centos
+  # define variables
+  vars:
+    working_directory: /tmp/working
+    shell_filename: collect.sh
+    result_filename: result.txt
+  tasks:
+  - name: create directory
+    file:
+      path: "{{ working_directory }}"
+      state: directory
+      mode: 0755
+  - name: copying execute shell file to remote
+    copy:
+      src: "{{ shell_filename }}"
+      dest: "{{ working_directory }}"
+      mode: 0744
+  - name: execute shell script
+    become: true
+    become_method: sudo
+    become_user: root
+    shell: sh {{ shell_filename }}
+    args:
+      chdir: "{{ working_directory }}"
+  - name: fetch result file from remote
+    fetch:
+      src: "{{ working_directory }}/{{ result_filename }}"
+      dest: result/result_{{ inventory_hostname }}.txt
+      flat: yes
+  - name: remove files and directories
+    file:
+      path: "{{ working_directory }}"
+      state: absent
